@@ -57,8 +57,8 @@ cd chess-with-ai
 flowchart TD
         A[Démarrage] --> B[Menu principal]
         B --> C{Sélection mode}
-        C --> D[Mode IA]|IA|
-        C --> E[Mode 2 joueurs]|Humain|
+        C -->|IA| D[Mode IA]
+        C -->|Humain| E[Mode 2 joueurs]
         D & E --> F[Initialisation jeu]
         F --> G[Tour joueur]
         G --> H{Fin partie?}
