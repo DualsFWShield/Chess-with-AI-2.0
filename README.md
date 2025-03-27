@@ -4,10 +4,10 @@ DFWS Chess est un jeu d'échecs premium avec thème clair/sombre, développé av
 
 ## Aperçu
 
-![Menu principal](assets/main-menu.png)
+![Menu principal](assets/Mode-selection.png)
 *Menu principal du jeu DFWS Chess*
 
-![Échiquier](assets/chessboard.png)
+![Échiquier](assets/board.png)
 *Échiquier avec interface moderne et animations fluides*
 
 ## Fonctionnalités
