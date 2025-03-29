@@ -240,11 +240,26 @@ function isCheckmate(color) {
     return true;
 }
 
+function getAllLegalMoves(color) {
+    const legalMoves = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = initialBoard[r][c];
+            if (piece && (piece === piece.toUpperCase() ? 'white' : 'black') === color) {
+                // getPossibleMoves filtre déjà les mouvements qui mettent le roi en échec
+                const moves = getPossibleMoves(piece, r, c);
+                moves.forEach(move => legalMoves.push({ from: { row: r, col: c }, to: { row: move[0], col: move[1] } }));
+            }
+        }
+    }
+    return legalMoves;
+}
+
 function isStalemate(color) {
     // Si le roi est en échec, ce n'est pas pat
     if (isKingInCheck(color)) return false;
 
-    // Vérifie s'il reste des mouvements légaux
+    // Vérifier s'il existe au moins un mouvement légal
     let hasLegalMoves = false;
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
@@ -259,26 +274,29 @@ function isStalemate(color) {
         }
         if (hasLegalMoves) break;
     }
-
+    
+    // Si au moins un mouvement légal existe, la partie n'est pas pat
     if (hasLegalMoves) return false;
 
-    // Vérifie les conditions de matériel insuffisant
+    // Sinon, on vérifie les conditions de matériel insuffisant
+
+    // On récupère toutes les pièces présentes sur le plateau
     const pieces = initialBoard.flat().filter(p => p !== '');
-    
-    // Roi contre roi
+
+    // Cas : Roi contre roi seulement
     if (pieces.length === 2) return true;
 
-    // Roi et fou/cavalier contre roi
+    // Cas : Roi et un fou ou un cavalier contre roi
     if (pieces.length === 3) {
         const nonKings = pieces.filter(p => p.toLowerCase() !== 'k');
-        if (nonKings.length === 1 && 
+        if (nonKings.length === 1 &&
             (nonKings[0].toLowerCase() === 'b' || nonKings[0].toLowerCase() === 'n')) {
             return true;
         }
     }
-
-    // Si aucun mouvement légal n'est possible mais il y a suffisamment de matériel
-    return !hasLegalMoves;
+    
+    // Si aucun mouvement légal n'existe (et le roi n'est pas en échec), c'est un pat
+    return true;
 }
 
 // --- AI functions ---
@@ -597,7 +615,7 @@ function aiMakeMove() {
                         endGame('black');
                         return;
                     }
-                    if (isStalemate('white')) {
+                    if (!isKingInCheck('white') && getAllLegalMoves('white').length === 0) {
                         updateGameStatus('Pat ! Match nul !');
                         playSound('draw');
                         endGame('draw');
@@ -1476,6 +1494,188 @@ updateTimerDisplay = function() {
         blackTimeEl.classList.remove('urgent');
     }
 };
+
+// --- Nouveaux éléments globaux pour le mode IA vs IA ---
+let aiDifficultyWhite = ''; // Difficulté pour l'IA jouant les blancs
+let aiDifficultyBlack = ''; // Difficulté pour l'IA jouant les noirs
+let aiMoveHistory = { white: [], black: [] };
+
+// Gestion du clic sur le bouton "IA vs IA"
+document.getElementById('mode-ai-ai').addEventListener('click', () => {
+    gameMode = 'ai-vs-ai';
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('ai-vs-ai-difficulty-selection').style.display = 'block';
+});
+
+// Écoute sur les boutons de difficulté pour IA vs IA
+document.querySelectorAll('#ai-vs-ai-difficulty-selection .difficulty-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const color = button.dataset.color;
+        const difficulty = button.dataset.difficulty;
+        if (color === 'white') {
+            aiDifficultyWhite = difficulty;
+            document.querySelectorAll('#ai-vs-ai-difficulty-selection button[data-color="white"]').forEach(b => b.classList.remove('selected'));
+            button.classList.add('selected');
+        } else if (color === 'black') {
+            aiDifficultyBlack = difficulty;
+            document.querySelectorAll('#ai-vs-ai-difficulty-selection button[data-color="black"]').forEach(b => b.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+        // Si les deux difficultés sont sélectionnées, lancer la partie
+        if (aiDifficultyWhite && aiDifficultyBlack) {
+            document.getElementById('ai-vs-ai-difficulty-selection').style.display = 'none';
+            startGame();
+            // Le joueur blanc (IA) commence, déclencher son coup après un court délai
+            if (currentPlayer === 'white') {
+                setTimeout(() => {
+                    aiMakeMoveForColor('white', aiDifficultyWhite);
+                }, 500);
+            }
+        }
+    });
+});
+
+// Fonction d'IA adaptée pour un camp donné en mode IA vs IA
+function aiMakeMoveForColor(color, difficulty) {
+    setTimeout(() => {
+        const moves = getAllPossibleMoves(color);
+        if (moves.length === 0) {
+            updateGameStatus('Match nul ! L\'IA ne peut plus jouer.');
+            playSound('draw');
+            clearInterval(timerInterval);
+            return;
+        }
+        
+        // Définir la profondeur de recherche en fonction de la difficulté choisie
+        const diffLower = difficulty.toLowerCase();
+        let searchDepth;
+        if (diffLower === 'noob') searchDepth = 1;
+        else if (diffLower === 'easy') searchDepth = 2;
+        else if (diffLower === 'regular') searchDepth = 3;
+        else if (diffLower === 'hard') searchDepth = 4;
+        else if (diffLower === 'very hard') searchDepth = 6;
+        else if (diffLower === 'super hard') searchDepth = 8;
+        else if (diffLower === 'magnus carlsen') searchDepth = 12;
+        else if (diffLower === 'unbeatable') searchDepth = 15;
+        else if (diffLower === 'adaptative') {
+            const ratingDiff = aiRating - playerRating;
+            if (ratingDiff < -300) searchDepth = 1;
+            else if (ratingDiff < -100) searchDepth = 2;
+            else if (ratingDiff < 100) searchDepth = 3;
+            else if (ratingDiff < 300) searchDepth = 4;
+            else searchDepth = 5;
+        } else {
+            searchDepth = 2;
+        }
+        
+        const fen = boardToFEN(initialBoard);
+        stockfish.postMessage(`position fen ${fen}`);
+        stockfish.postMessage(`go depth ${searchDepth}`);
+        
+        stockfish.onmessage = function(event) {
+            if (event.data.startsWith('bestmove')) {
+                let bestmove = event.data.split(' ')[1];
+                // Arrêter toute recherche en cours
+                stockfish.postMessage("stop");
+                stockfish.onmessage = () => {};
+                
+                if (bestmove && bestmove !== '(none)') {
+                    // Enregistrer le coup dans l'historique de cette couleur
+                    aiMoveHistory[color].push(bestmove);
+                    if (aiMoveHistory[color].length > 6) {
+                        aiMoveHistory[color].shift();
+                    }
+                    const repeatCount = aiMoveHistory[color].filter(m => m === bestmove).length;
+                    
+                    // Si le coup est répété au moins 3 fois, forcer un coup alternatif
+                    if (repeatCount >= 3) {
+                        const files = ['a','b','c','d','e','f','g','h'];
+                        // Chercher dans les mouvements légaux le premier coup différent
+                        const alternative = moves.find(m => {
+                            const uci = files[m.from.col] + (8 - m.from.row) + files[m.to.col] + (8 - m.to.row);
+                            return uci !== bestmove;
+                        });
+                        if (alternative) {
+                            bestmove = files[alternative.from.col] + (8 - alternative.from.row) + files[alternative.to.col] + (8 - alternative.to.row);
+                            updateGameStatus(`Boucle détectée pour ${color}. Coup alternatif forcé.`);
+                            // Réinitialiser l'historique pour ce camp
+                            aiMoveHistory[color] = [];
+                        }
+                    }
+                    
+                    const fileToCol = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
+                    const fromFile = bestmove[0];
+                    const fromRank = bestmove[1];
+                    const toFile = bestmove[2];
+                    const toRank = bestmove[3];
+                    const fromCol = fileToCol[fromFile];
+                    const toCol = fileToCol[toFile];
+                    const fromRow = 8 - parseInt(fromRank);
+                    const toRow = 8 - parseInt(toRank);
+                    
+                    // Sécurité : éviter de capturer le roi
+                    if (initialBoard[toRow][toCol] === 'K' || initialBoard[toRow][toCol] === 'k') {
+                        updateGameStatus('Partie terminée ! Le roi a été capturé par l\'IA.');
+                        endGame(color);
+                        return;
+                    }
+                    
+                    // Enregistrer la capture éventuelle
+                    if (initialBoard[toRow][toCol]) {
+                        const capturedPiece = initialBoard[toRow][toCol];
+                        if (capturedPiece === capturedPiece.toUpperCase())
+                            capturedBlack.push(capturedPiece.toLowerCase());
+                        else
+                            capturedWhite.push(capturedPiece.toUpperCase());
+                    }
+                    
+                    // Appliquer le coup
+                    initialBoard[toRow][toCol] = initialBoard[fromRow][fromCol];
+                    initialBoard[fromRow][fromCol] = '';
+                    
+                    // Promotion automatique
+                    if (initialBoard[toRow][toCol].toLowerCase() === 'p' && (toRow === 0 || toRow === 7)) {
+                        initialBoard[toRow][toCol] = 'q';
+                    }
+                    
+                    createBoard();
+                    updateCapturedPieces();
+                    updateProgressBar();
+                    checkAndUpdateKingStatus();
+                    updateRatingDisplay();
+                    playSound('move2');
+                    
+                    const opponent = color === 'white' ? 'black' : 'white';
+                    if (isCheckmate(opponent)) {
+                        updateGameStatus(`Échec et mat ! L'IA (${opponent}) gagne !`);
+                        playSound(opponent === 'white' ? 'win' : 'lose');
+                        endGame(opponent);
+                        return;
+                    }
+                    if (isKingInCheck(opponent)) {
+                        updateGameStatus(`Échec au roi ${opponent === 'white' ? 'noir' : 'blanc'} !`);
+                        playSound('check');
+                    }
+                    
+                    if (!isKingInCheck(opponent) && getAllLegalMoves(opponent).length === 0) {
+                        updateGameStatus('Pat ! Match nul !');
+                        playSound('draw');
+                        endGame('draw');
+                        return;
+                    }
+
+                    currentPlayer = (currentPlayer === 'white' ? 'black' : 'white');
+
+                    // Relancer le coup pour le prochain camp en mode IA vs IA
+                    if (gameMode === 'ai-vs-ai') {
+                        const nextDiff = currentPlayer === 'white' ? aiDifficultyWhite : aiDifficultyBlack;
+                        aiMakeMoveForColor(currentPlayer, nextDiff);
+                    }
+                }
+            }
+        };
+    }, 500);
+}
 
 createBoard();
 updateCapturedPieces();

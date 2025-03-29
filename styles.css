@@ -251,6 +251,13 @@ body.light-theme .control-button {
     gap: 12px;
     margin-top: 20px;
 }
+.ai-diff-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+}
 .difficulty-button {
     background: var(--secondary-color);
     border: none;
@@ -885,7 +892,7 @@ body.light-theme .stat-label {
         padding: 20px;
         margin-bottom: 20px;
     }
-    .mode-options, .difficulty-options {
+    .mode-options, .difficulty-options, .ai-diff-group {
         flex-direction: column;
         align-items: center;
     }
@@ -951,7 +958,7 @@ body.light-theme .stat-label {
         padding: 30px;
         font-size: 1.1em;
     }
-    .difficulty-options {
+    .difficulty-options, .ai-diff-group {
         justify-content: center;
     }
     .difficulty-button {
