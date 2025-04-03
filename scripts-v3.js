@@ -1,11 +1,17 @@
-// --- START OF FILE scriptss.js ---
-
-// --- Constants ---
 const chessboard = document.getElementById('chessboard');
 const pieces = {
     'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
     'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
 };
+
+let pieceRenderMode = 'png';
+
+function togglePieceRenderMode() {
+    pieceRenderMode = (pieceRenderMode === 'ascii') ? 'png' : 'ascii';
+    createBoard(); // Redraw board with new mode
+    console.log(`Piece render mode switched to: ${pieceRenderMode}`);
+}
+
 const pieceValues = { 'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': Infinity }; // King value for material check
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const K_FACTOR = 32;
@@ -87,13 +93,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gameStatusEl) gameStatusEl.textContent = "Choisissez un mode de jeu.";
     else console.error("Element with ID 'game-status' not found.");
 
-    // Add null checks for potentially missing elements before adding listeners
-     if (!mainMenuEl || !difficultySelectionEl || !aiVsAiDifficultySelectionEl || !gameEndModal || !promotionModal || !promotionOptionsContainer) {
+    if (!mainMenuEl || !difficultySelectionEl || !aiVsAiDifficultySelectionEl || !gameEndModal || !promotionModal || !promotionOptionsContainer) {
          console.error("One or more essential menu/modal elements are missing from the HTML.");
-         // Optionally disable game modes or show an error message to the user
      }
-     if (!chessboard) console.error("Element with ID 'chessboard' not found.");
-     if (!playerInfoWhiteEl || !playerInfoBlackEl) console.error("Player info elements (.player-info-white / .player-info-black) not found.");
+    if (!chessboard) console.error("Element with ID 'chessboard' not found.");
+    if (!playerInfoWhiteEl || !playerInfoBlackEl) console.error("Player info elements not found.");
+
+    // Attach toggle for piece render mode
+    const pieceRenderToggle = document.getElementById('piece-render-toggle');
+    if (pieceRenderToggle) {
+        pieceRenderToggle.addEventListener('click', togglePieceRenderMode);
+    } else {
+        console.warn("Piece render toggle button not found.");
+    }
 });
 
 
@@ -1144,28 +1156,52 @@ function createBoard() {
             square.dataset.row = rowIndex;
             square.dataset.col = colIndex;
 
+            const label = document.createElement('span');
+            label.className = 'square-label';
+            // La variable "files" est déjà définie (['a','b',..., 'h'])
+            // On affiche les chiffres de 8 à 1 pour respecter la notation d'échiquier
+            label.textContent = `${files[colIndex]}${8 - rowIndex}`;
+            square.appendChild(label);
+
             const piece = initialBoard[rowIndex][colIndex];
             if (piece) {
-                const pieceElement = document.createElement('span');
-                pieceElement.className = 'piece';
-                pieceElement.textContent = pieces[piece];
-                pieceElement.classList.add(piece === piece.toUpperCase() ? 'white-piece' : 'black-piece');
-                square.appendChild(pieceElement);
+                if (pieceRenderMode === 'ascii') {
+                    const pieceElement = document.createElement('span');
+                    pieceElement.className = 'piece';
+                    pieceElement.textContent = pieces[piece];
+                    pieceElement.classList.add(piece === piece.toUpperCase() ? 'white-piece' : 'black-piece');
+                    square.appendChild(pieceElement);
+                } else if (pieceRenderMode === 'png') {
+                    const img = document.createElement('img');
+                    let filename = "";
+                    if (piece === piece.toUpperCase()) {
+                        // White pieces
+                        if (piece === 'K') filename = "wk.png";
+                        else if (piece === 'Q') filename = "wq.png";
+                        else if (piece === 'R') filename = "wr.png";
+                        else if (piece === 'B') filename = "wb.png";
+                        else if (piece === 'N') filename = "wkn.png";
+                        else if (piece === 'P') filename = "wp.png";
+                    } else {
+                        // Black pieces
+                        if (piece === 'k') filename = "bk.png";
+                        else if (piece === 'q') filename = "bq.png";
+                        else if (piece === 'r') filename = "br.png";
+                        else if (piece === 'b') filename = "bb.png";
+                        else if (piece === 'n') filename = "bkn.png";
+                        else if (piece === 'p') filename = "bp.png";
+                    }
+                    img.src = `pieces/${filename}`;
+                    img.alt = piece;
+                    img.classList.add("piece");
+                    square.appendChild(img);
+                }
             }
 
-            // Add label (optional, uncomment if needed)
-            // const label = document.createElement('span');
-            // label.className = 'square-label';
-            // label.textContent = `${files[colIndex]}${8 - rowIndex}`;
-            // square.appendChild(label);
+            // ...existing code to handle labels, click listener, highlighting...
+            square.addEventListener('click', handleSquareClick);
+            square.style.cursor = (isGameOver || (gameMode === 'ai' && currentPlayer === 'black') || gameMode === 'ai-vs-ai' || isStockfishThinking) ? 'default' : 'pointer';
 
-             // Add click listener - allow clicking always, but handler checks state
-             square.addEventListener('click', handleSquareClick);
-             // Optionally change cursor based on state
-             square.style.cursor = (isGameOver || (gameMode === 'ai' && currentPlayer === 'black') || gameMode === 'ai-vs-ai' || isStockfishThinking) ? 'default' : 'pointer';
-
-
-            // Highlight last move
             if (lastMove &&
                ((rowIndex === lastMove.from[0] && colIndex === lastMove.from[1]) ||
                 (rowIndex === lastMove.to[0] && colIndex === lastMove.to[1]))) {
@@ -1177,22 +1213,17 @@ function createBoard() {
     }
     chessboard.appendChild(boardFragment);
 
-    // Re-apply selection and check highlights after redraw
-    if (selectedPiece?.element) { // Check if selectedPiece and its element exist
-         // Find the new square element corresponding to the selected piece's coordinates
+    // ...existing code re-applying selection and check highlights...
+    if (selectedPiece?.element) {
          const newSelectedSquare = chessboard.querySelector(`.square[data-row="${selectedPiece.row}"][data-col="${selectedPiece.col}"]`);
          if (newSelectedSquare) {
              newSelectedSquare.classList.add('selected');
-             selectedPiece.element = newSelectedSquare; // Update the element reference
-             // Optionally re-highlight moves if needed, though usually done on select click
-             // const rehighlightMoves = getPossibleMoves(initialBoard[selectedPiece.row][selectedPiece.col], selectedPiece.row, selectedPiece.col);
-             // highlightMoves(rehighlightMoves);
+             selectedPiece.element = newSelectedSquare;
          } else {
-             // Piece might have been captured or moved during an AI turn while selected? Deselect.
              selectedPiece = null;
          }
     }
-    checkAndUpdateKingStatus(); // Re-apply check highlight
+    checkAndUpdateKingStatus();
 }
 
 function highlightMoves(moves) {

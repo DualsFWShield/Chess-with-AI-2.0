@@ -6,17 +6,17 @@
     --surface-color: #1a1c23;
     --text-color: #e8e3d7;
     /* Ajusté pour meilleure lisibilité */
-    --accent-color: #e8e3d7;
+    --accent-color: #e9dbbb;
     /* pièces blanches */
-    --dark-piece-color: #4a4a4a;
+    --dark-piece-color: #000000;
     /* pièces noires */
-    --light-square-color: #e8e3d7;
-    --dark-square-color: #8b6b57;
+    --light-square-color: #eeeed2;
+    --dark-square-color: #769656;
     --highlight-move-color: rgba(168, 171, 179, 0.9);
-    --highlight-capture-color: rgba(210, 90, 90, 0.7);
+    --highlight-capture-color: rgba(0, 0, 0, 0.7);
     --highlight-selected-color: rgba(74, 102, 160, 0.4);
     --highlight-check-color: rgba(255, 0, 0, 0.5);
-    --highlight-last-move-color: rgba(200, 200, 0, 0.3);
+    --highlight-last-move-color: #baca44;
     --border-radius: 12px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -28,7 +28,7 @@
     --light-text-color: #333333;
     --light-light-square-color: #f0d9b5;
     --light-dark-square-color: #b58863;
-    --light-highlight-move-color: rgba(74, 102, 160, 0.7);
+    --highlight-move-color: #d3d6bc;
     --light-highlight-capture-color: rgba(200, 60, 60, 0.6);
 }
 
@@ -37,6 +37,22 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+.square img.piece {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.square .piece {
+    position: relative;
+    z-index: 1;
+}
+
+/* Place highlight (including last move) behind the piece */
+.square::after {
+    z-index: 0;
 }
 
 body {
@@ -462,7 +478,6 @@ body.light-theme .difficulty-button.selected {
     -webkit-user-select: none;
     user-select: none;
     /* Prevent text selection */
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
     transition: transform 0.15s ease;
 }
 
@@ -850,7 +865,7 @@ body.light-theme .game-controls button:disabled {
     background: rgba(0, 0, 0, 0.7);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
-    display: none;
+    display: none; /* Changez à 'flex' lors de l'affichage de la modale */
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -866,6 +881,7 @@ body.light-theme .modal {
 
 /* Ensure display works */
 .modal-content {
+    position: relative;
     background: var(--surface-color);
     padding: 25px;
     border-radius: var(--border-radius);
@@ -873,6 +889,10 @@ body.light-theme .modal {
     max-width: 450px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     text-align: center;
+}
+
+.modal[style*="display: block"] {
+    display: flex !important;
 }
 
 .modal-header h3 {
