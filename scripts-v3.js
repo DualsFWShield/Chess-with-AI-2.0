@@ -51,6 +51,19 @@ let isStockfishReady = false;
 let isStockfishThinking = false;
 let stockfishResponseCallback = null;
 
+let aiDelayEnabled = true; // Active ou désactive le délai pour l'IA
+const AI_DELAY_TIME = 1500; // Délai en millisecondes (1,5 s)
+
+function toggleAIDelay() {
+    aiDelayEnabled = !aiDelayEnabled;
+    console.log(`AI Delay ${aiDelayEnabled ? 'Activé' : 'Désactivé'}`);
+    // Mettez à jour l'UI du bouton si besoin
+    const btn = document.getElementById('ai-delay-toggle');
+    if (btn) {
+        btn.textContent = aiDelayEnabled ? "ON" : "OFF";
+    }
+}
+
 // --- UI Elements (Cache them) ---
 const whiteTimeEl = document.getElementById('white-time');
 const blackTimeEl = document.getElementById('black-time');
@@ -94,8 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     else console.error("Element with ID 'game-status' not found.");
 
     if (!mainMenuEl || !difficultySelectionEl || !aiVsAiDifficultySelectionEl || !gameEndModal || !promotionModal || !promotionOptionsContainer) {
-         console.error("One or more essential menu/modal elements are missing from the HTML.");
-     }
+        console.error("One or more essential menu/modal elements are missing from the HTML.");
+    }
     if (!chessboard) console.error("Element with ID 'chessboard' not found.");
     if (!playerInfoWhiteEl || !playerInfoBlackEl) console.error("Player info elements not found.");
 
@@ -105,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
         pieceRenderToggle.addEventListener('click', togglePieceRenderMode);
     } else {
         console.warn("Piece render toggle button not found.");
+    }
+
+    const aiDelayToggle = document.getElementById('ai-delay-toggle');
+    if (aiDelayToggle) {
+        aiDelayToggle.addEventListener('click', toggleAIDelay);
+    } else {
+        console.warn("Bouton 'ai-delay-toggle' non trouvé.");
     }
 });
 
@@ -164,72 +184,72 @@ function setupGameMode(mode) {
 }
 
 function handleAiVsAiDifficultySelection(button) {
-     if (!aiVsAiDifficultySelectionEl) return;
-     const color = button.dataset.color;
-     const difficulty = button.dataset.difficulty;
-     const columnButtons = aiVsAiDifficultySelectionEl.querySelectorAll(`button[data-color="${color}"]`);
+    if (!aiVsAiDifficultySelectionEl) return;
+    const color = button.dataset.color;
+    const difficulty = button.dataset.difficulty;
+    const columnButtons = aiVsAiDifficultySelectionEl.querySelectorAll(`button[data-color="${color}"]`);
 
-     columnButtons.forEach(b => b.classList.remove('selected'));
-     button.classList.add('selected');
+    columnButtons.forEach(b => b.classList.remove('selected'));
+    button.classList.add('selected');
 
-     if (color === 'white') aiDifficultyWhite = difficulty;
-     else if (color === 'black') aiDifficultyBlack = difficulty;
+    if (color === 'white') aiDifficultyWhite = difficulty;
+    else if (color === 'black') aiDifficultyBlack = difficulty;
 
-     if (aiDifficultyWhite && aiDifficultyBlack) {
-         aiVsAiDifficultySelectionEl.style.display = 'none';
-         startGame();
-     }
+    if (aiDifficultyWhite && aiDifficultyBlack) {
+        aiVsAiDifficultySelectionEl.style.display = 'none';
+        startGame();
+    }
 }
 
 function returnToMainMenu() {
-     if (gameEndModal) gameEndModal.style.display = 'none';
-     if (mainMenuEl) mainMenuEl.style.display = 'block';
-     if (difficultySelectionEl) difficultySelectionEl.style.display = 'none';
-     if (aiVsAiDifficultySelectionEl) aiVsAiDifficultySelectionEl.style.display = 'none';
-     if (chessboard) chessboard.innerHTML = '';
-     if (moveListEl) moveListEl.innerHTML = '';
-     resetTimer();
-     updateTimerDisplay();
-     isGameOver = true;
-     clearInterval(timerInterval);
-     if (gameStatusEl) gameStatusEl.textContent = "Choisissez un mode de jeu.";
-     updateRatingDisplay();
-     resetBoardState(); // Full reset including captures etc.
+    if (gameEndModal) gameEndModal.style.display = 'none';
+    if (mainMenuEl) mainMenuEl.style.display = 'block';
+    if (difficultySelectionEl) difficultySelectionEl.style.display = 'none';
+    if (aiVsAiDifficultySelectionEl) aiVsAiDifficultySelectionEl.style.display = 'none';
+    if (chessboard) chessboard.innerHTML = '';
+    if (moveListEl) moveListEl.innerHTML = '';
+    resetTimer();
+    updateTimerDisplay();
+    isGameOver = true;
+    clearInterval(timerInterval);
+    if (gameStatusEl) gameStatusEl.textContent = "Choisissez un mode de jeu.";
+    updateRatingDisplay();
+    resetBoardState(); // Full reset including captures etc.
 }
 
 function resetBoardState() {
     // ... (previous implementation was good) ...
-     initialBoard = [
-         ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-         ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-         ['', '', '', '', '', '', '', ''],
-         ['', '', '', '', '', '', '', ''],
-         ['', '', '', '', '', '', '', ''],
-         ['', '', '', '', '', '', '', ''],
-         ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-         ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-     ];
-     currentPlayer = 'white';
-     enPassantTarget = null;
-     whiteCanCastleKingside = true;
-     whiteCanCastleQueenside = true;
-     blackCanCastleKingside = true;
-     blackCanCastleQueenside = true;
-     halfMoveClock = 0;
-     fullMoveNumber = 1;
-     moveHistory = [];
-     selectedPiece = null;
-     lastMove = null;
-     isGameOver = false;
-     capturedWhite.length = 0;
-     capturedBlack.length = 0;
-     isStockfishThinking = false;
-     stockfishResponseCallback = null;
-     if (moveListEl) moveListEl.innerHTML = '';
-     updateGameStatus("Nouvelle partie ! Les blancs jouent.");
-     updateControlsState();
-     updateAllUI(); // Update display like captured pieces
-     updatePlayerTurnIndicator();
+    initialBoard = [
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+    ];
+    currentPlayer = 'white';
+    enPassantTarget = null;
+    whiteCanCastleKingside = true;
+    whiteCanCastleQueenside = true;
+    blackCanCastleKingside = true;
+    blackCanCastleQueenside = true;
+    halfMoveClock = 0;
+    fullMoveNumber = 1;
+    moveHistory = [];
+    selectedPiece = null;
+    lastMove = null;
+    isGameOver = false;
+    capturedWhite.length = 0;
+    capturedBlack.length = 0;
+    isStockfishThinking = false;
+    stockfishResponseCallback = null;
+    if (moveListEl) moveListEl.innerHTML = '';
+    updateGameStatus("Nouvelle partie ! Les blancs jouent.");
+    updateControlsState();
+    updateAllUI(); // Update display like captured pieces
+    updatePlayerTurnIndicator();
 }
 
 function loadSavedSettings() {
@@ -284,9 +304,9 @@ function switchPlayer() {
 }
 
 function updatePlayerTurnIndicator() {
-     if (!playerInfoWhiteEl || !playerInfoBlackEl) return;
-     playerInfoWhiteEl.classList.toggle('active-player', currentPlayer === 'white');
-     playerInfoBlackEl.classList.toggle('active-player', currentPlayer === 'black');
+    if (!playerInfoWhiteEl || !playerInfoBlackEl) return;
+    playerInfoWhiteEl.classList.toggle('active-player', currentPlayer === 'white');
+    playerInfoBlackEl.classList.toggle('active-player', currentPlayer === 'black');
 }
 
 function endGame(winner, reason) {
@@ -337,25 +357,25 @@ function resignGame() {
 }
 
 function updateControlsState() {
-     const canUndo = moveHistory.length > 0 && !isGameOver && !isStockfishThinking && gameMode !== 'ai-vs-ai';
-     const canResign = !isGameOver && gameMode !== 'ai-vs-ai';
-     if (undoButton) undoButton.disabled = !canUndo;
-     if (resignButton) resignButton.disabled = !canResign;
+    const canUndo = moveHistory.length > 0 && !isGameOver && !isStockfishThinking && gameMode !== 'ai-vs-ai';
+    const canResign = !isGameOver && gameMode !== 'ai-vs-ai';
+    if (undoButton) undoButton.disabled = !canUndo;
+    if (resignButton) resignButton.disabled = !canResign;
 }
 
 // --- Move History & Notation ---
 function recordMove(fromRow, fromCol, toRow, toCol, piece, capturedPiece, promotionPiece, flags) {
-     const historyEntry = {
-         from: [fromRow, fromCol], to: [toRow, toCol], piece: piece,
-         captured: capturedPiece, promotion: promotionPiece, flags: flags,
-         fenBefore: boardToFEN(initialBoard),
-         epBefore: enPassantTarget ? [...enPassantTarget] : null,
-         castleBefore: { wK: whiteCanCastleKingside, wQ: whiteCanCastleQueenside, bK: blackCanCastleKingside, bQ: blackCanCastleQueenside },
-         halfMoveClockBefore: halfMoveClock,
-         fullMoveNumberBefore: fullMoveNumber
-     };
-     moveHistory.push(historyEntry);
-     updateMoveListUI(historyEntry);
+    const historyEntry = {
+        from: [fromRow, fromCol], to: [toRow, toCol], piece: piece,
+        captured: capturedPiece, promotion: promotionPiece, flags: flags,
+        fenBefore: boardToFEN(initialBoard),
+        epBefore: enPassantTarget ? [...enPassantTarget] : null,
+        castleBefore: { wK: whiteCanCastleKingside, wQ: whiteCanCastleQueenside, bK: blackCanCastleKingside, bQ: blackCanCastleQueenside },
+        halfMoveClockBefore: halfMoveClock,
+        fullMoveNumberBefore: fullMoveNumber
+    };
+    moveHistory.push(historyEntry);
+    updateMoveListUI(historyEntry);
 }
 
 function getAlgebraicNotation(moveData) {
@@ -380,110 +400,110 @@ function getAlgebraicNotation(moveData) {
 
 
 function updateMoveListUI(moveData) {
-     if (!moveListEl) return;
-     const notation = getAlgebraicNotation(moveData);
-     const moveNumber = moveData.fullMoveNumberBefore;
-     const moveIndex = moveHistory.length - 1; // Index in the history array
+    if (!moveListEl) return;
+    const notation = getAlgebraicNotation(moveData);
+    const moveNumber = moveData.fullMoveNumberBefore;
+    const moveIndex = moveHistory.length - 1; // Index in the history array
 
-     if (moveData.piece.toUpperCase() === moveData.piece) { // White moved
-         const listItem = document.createElement('li');
-         listItem.dataset.moveIndex = moveIndex;
-         listItem.innerHTML = `<span class="move-number">${moveNumber}.</span> <span class="move-white">${notation}</span>`;
-         moveListEl.appendChild(listItem);
-     } else { // Black moved
-         let lastItem = moveListEl.lastElementChild;
-         if (lastItem && lastItem.querySelectorAll('.move-black').length === 0) {
-             const blackMoveSpan = document.createElement('span');
-             blackMoveSpan.className = 'move-black';
-             blackMoveSpan.textContent = notation;
-             lastItem.appendChild(document.createTextNode(' '));
-             lastItem.appendChild(blackMoveSpan);
-             // Update dataset index if needed, though usually tied to li
-             // lastItem.dataset.moveIndexBlack = moveIndex; // Example
-         } else {
-             // Fallback if no corresponding white move li exists (shouldn't happen)
-             const listItem = document.createElement('li');
-             listItem.dataset.moveIndex = moveIndex;
-             listItem.innerHTML = `<span class="move-number">${moveNumber}...</span> <span class="move-black">${notation}</span>`;
-             moveListEl.appendChild(listItem);
-         }
-     }
-     moveListEl.scrollTop = moveListEl.scrollHeight;
+    if (moveData.piece.toUpperCase() === moveData.piece) { // White moved
+        const listItem = document.createElement('li');
+        listItem.dataset.moveIndex = moveIndex;
+        listItem.innerHTML = `<span class="move-number">${moveNumber}.</span> <span class="move-white">${notation}</span>`;
+        moveListEl.appendChild(listItem);
+    } else { // Black moved
+        let lastItem = moveListEl.lastElementChild;
+        if (lastItem && lastItem.querySelectorAll('.move-black').length === 0) {
+            const blackMoveSpan = document.createElement('span');
+            blackMoveSpan.className = 'move-black';
+            blackMoveSpan.textContent = notation;
+            lastItem.appendChild(document.createTextNode(' '));
+            lastItem.appendChild(blackMoveSpan);
+            // Update dataset index if needed, though usually tied to li
+            // lastItem.dataset.moveIndexBlack = moveIndex; // Example
+        } else {
+            // Fallback if no corresponding white move li exists (shouldn't happen)
+            const listItem = document.createElement('li');
+            listItem.dataset.moveIndex = moveIndex;
+            listItem.innerHTML = `<span class="move-number">${moveNumber}...</span> <span class="move-black">${notation}</span>`;
+            moveListEl.appendChild(listItem);
+        }
+    }
+    moveListEl.scrollTop = moveListEl.scrollHeight;
 }
 
 // --- Undo Logic ---
 function undoMove() {
-     if (moveHistory.length === 0 || isGameOver || isStockfishThinking || gameMode === 'ai-vs-ai') {
-         playSound('illegal');
-         return;
-     }
+    if (moveHistory.length === 0 || isGameOver || isStockfishThinking || gameMode === 'ai-vs-ai') {
+        playSound('illegal');
+        return;
+    }
 
-     let movesToUndo = 1;
-     if (gameMode === 'ai' && currentPlayer === 'black' && moveHistory.length >= 2) {
-         movesToUndo = 2;
-     }
+    let movesToUndo = 1;
+    if (gameMode === 'ai' && currentPlayer === 'black' && moveHistory.length >= 2) {
+        movesToUndo = 2;
+    }
 
-     for (let i = 0; i < movesToUndo; i++) {
-         if (moveHistory.length === 0) break;
+    for (let i = 0; i < movesToUndo; i++) {
+        if (moveHistory.length === 0) break;
 
-         const lastMoveData = moveHistory.pop();
+        const lastMoveData = moveHistory.pop();
 
-         // Restore board and primary state from FEN
-         const success = parseFEN(lastMoveData.fenBefore);
-         if (!success) {
-             console.error("Failed to parse FEN during undo. State corrupted.");
-             moveHistory.push(lastMoveData); // Put back
-             return;
-         }
-         // Note: parseFEN updates initialBoard, currentPlayer, castling rights, EP, clocks.
+        // Restore board and primary state from FEN
+        const success = parseFEN(lastMoveData.fenBefore);
+        if (!success) {
+            console.error("Failed to parse FEN during undo. State corrupted.");
+            moveHistory.push(lastMoveData); // Put back
+            return;
+        }
+        // Note: parseFEN updates initialBoard, currentPlayer, castling rights, EP, clocks.
 
-         // Restore captured pieces list
-         if (lastMoveData.captured) {
-             const capturedActual = lastMoveData.captured; // The piece char that was on the square
-             const capturedColor = (capturedActual.toUpperCase() === capturedActual) ? 'white' : 'black';
-             // The piece to remove from the *opponent's* capture list
-             const pieceToRemoveFromList = (capturedColor === 'white') ? capturedActual.toLowerCase() : capturedActual.toUpperCase();
-             // The list it was added to
-             const targetArray = (capturedColor === 'white') ? capturedBlack : capturedWhite;
+        // Restore captured pieces list
+        if (lastMoveData.captured) {
+            const capturedActual = lastMoveData.captured; // The piece char that was on the square
+            const capturedColor = (capturedActual.toUpperCase() === capturedActual) ? 'white' : 'black';
+            // The piece to remove from the *opponent's* capture list
+            const pieceToRemoveFromList = (capturedColor === 'white') ? capturedActual.toLowerCase() : capturedActual.toUpperCase();
+            // The list it was added to
+            const targetArray = (capturedColor === 'white') ? capturedBlack : capturedWhite;
 
-             const index = targetArray.indexOf(pieceToRemoveFromList);
-             if (index > -1) {
-                 targetArray.splice(index, 1);
-             } else {
-                 // This might happen with en-passant if not handled carefully
-                 console.warn(`Undo: Could not find captured piece '${pieceToRemoveFromList}' in capture list.`);
-             }
-         }
-         // Restore lastMove highlight state
-          lastMove = (moveHistory.length > 0) ? { from: moveHistory[moveHistory.length - 1].from, to: moveHistory[moveHistory.length - 1].to } : null;
-     }
+            const index = targetArray.indexOf(pieceToRemoveFromList);
+            if (index > -1) {
+                targetArray.splice(index, 1);
+            } else {
+                // This might happen with en-passant if not handled carefully
+                console.warn(`Undo: Could not find captured piece '${pieceToRemoveFromList}' in capture list.`);
+            }
+        }
+        // Restore lastMove highlight state
+        lastMove = (moveHistory.length > 0) ? { from: moveHistory[moveHistory.length - 1].from, to: moveHistory[moveHistory.length - 1].to } : null;
+    }
 
-     // --- Update UI After Undo ---
-     createBoard(); // Redraw based on restored initialBoard
-     updateAllUI(); // Update captured, progress, timers, ratings, turn indicator
-     updateGameStatus(`Tour précédent annulé. Au tour des ${currentPlayer === 'white' ? 'Blancs' : 'Noirs'}.`);
-     updateControlsState();
+    // --- Update UI After Undo ---
+    createBoard(); // Redraw based on restored initialBoard
+    updateAllUI(); // Update captured, progress, timers, ratings, turn indicator
+    updateGameStatus(`Tour précédent annulé. Au tour des ${currentPlayer === 'white' ? 'Blancs' : 'Noirs'}.`);
+    updateControlsState();
 
-     // Remove the last move(s) from the UI list
-     if (moveListEl) {
-         for (let i = 0; i < movesToUndo; i++) {
-             let lastItem = moveListEl.lastElementChild;
-             if (lastItem) {
+    // Remove the last move(s) from the UI list
+    if (moveListEl) {
+        for (let i = 0; i < movesToUndo; i++) {
+            let lastItem = moveListEl.lastElementChild;
+            if (lastItem) {
                 let blackMoveSpan = lastItem.querySelector('.move-black');
                 if (blackMoveSpan && lastItem.querySelectorAll('.move-white').length > 0) {
-                     // If black move exists and white move also exists in the same LI, remove only black
-                     blackMoveSpan.previousSibling.remove(); // Remove space
-                     blackMoveSpan.remove();
-                 } else {
-                     // Otherwise, remove the whole list item (either only black was there, or it was white's turn)
-                     lastItem.remove();
-                 }
-             }
-         }
-         if (moveListEl) moveListEl.scrollTop = moveListEl.scrollHeight;
-     }
+                    // If black move exists and white move also exists in the same LI, remove only black
+                    blackMoveSpan.previousSibling.remove(); // Remove space
+                    blackMoveSpan.remove();
+                } else {
+                    // Otherwise, remove the whole list item (either only black was there, or it was white's turn)
+                    lastItem.remove();
+                }
+            }
+        }
+        if (moveListEl) moveListEl.scrollTop = moveListEl.scrollHeight;
+    }
 
-     playSound('click');
+    playSound('click');
 }
 
 
@@ -523,72 +543,72 @@ function boardToFEN(board) {
 }
 
 function parseFEN(fen) {
-     // console.log("Parsing FEN:", fen);
-     try {
-         const parts = fen.split(' ');
-         if (parts.length < 6) throw new Error("Invalid FEN: Less than 6 parts.");
+    // console.log("Parsing FEN:", fen);
+    try {
+        const parts = fen.split(' ');
+        if (parts.length < 6) throw new Error("Invalid FEN: Less than 6 parts.");
 
-         // 1. Piece Placement
-         const newBoard = Array(8).fill(null).map(() => Array(8).fill(''));
-         const rows = parts[0].split('/');
-         if (rows.length !== 8) throw new Error("Invalid FEN: Not 8 rows.");
-         for (let r = 0; r < 8; r++) {
-             let c = 0;
-             for (const char of rows[r]) {
-                 if (c >= 8) throw new Error(`Invalid FEN: Row ${r+1} too long.`);
-                 if (/\d/.test(char)) {
-                     c += parseInt(char);
-                 } else {
-                     if (!pieces[char]) throw new Error(`Invalid FEN: Invalid piece '${char}'.`);
-                     newBoard[r][c] = char;
-                     c++;
-                 }
-             }
-             if (c !== 8) throw new Error(`Invalid FEN: Row ${r+1} incorrect length.`);
-         }
-         initialBoard = newBoard;
+        // 1. Piece Placement
+        const newBoard = Array(8).fill(null).map(() => Array(8).fill(''));
+        const rows = parts[0].split('/');
+        if (rows.length !== 8) throw new Error("Invalid FEN: Not 8 rows.");
+        for (let r = 0; r < 8; r++) {
+            let c = 0;
+            for (const char of rows[r]) {
+                if (c >= 8) throw new Error(`Invalid FEN: Row ${r + 1} too long.`);
+                if (/\d/.test(char)) {
+                    c += parseInt(char);
+                } else {
+                    if (!pieces[char]) throw new Error(`Invalid FEN: Invalid piece '${char}'.`);
+                    newBoard[r][c] = char;
+                    c++;
+                }
+            }
+            if (c !== 8) throw new Error(`Invalid FEN: Row ${r + 1} incorrect length.`);
+        }
+        initialBoard = newBoard;
 
-         // 2. Active Color
-         if (parts[1] !== 'w' && parts[1] !== 'b') throw new Error("Invalid FEN: Invalid active color.");
-         currentPlayer = (parts[1] === 'w' ? 'white' : 'black');
+        // 2. Active Color
+        if (parts[1] !== 'w' && parts[1] !== 'b') throw new Error("Invalid FEN: Invalid active color.");
+        currentPlayer = (parts[1] === 'w' ? 'white' : 'black');
 
-         // 3. Castling Rights
-         const castling = parts[2];
-         if (!/^(?:-|[KQkq]{1,4})$/.test(castling) || /(.).*\1/.test(castling)) throw new Error("Invalid FEN: Invalid castling rights.");
-         whiteCanCastleKingside = castling.includes('K');
-         whiteCanCastleQueenside = castling.includes('Q');
-         blackCanCastleKingside = castling.includes('k');
-         blackCanCastleQueenside = castling.includes('q');
+        // 3. Castling Rights
+        const castling = parts[2];
+        if (!/^(?:-|[KQkq]{1,4})$/.test(castling) || /(.).*\1/.test(castling)) throw new Error("Invalid FEN: Invalid castling rights.");
+        whiteCanCastleKingside = castling.includes('K');
+        whiteCanCastleQueenside = castling.includes('Q');
+        blackCanCastleKingside = castling.includes('k');
+        blackCanCastleQueenside = castling.includes('q');
 
-         // 4. En Passant Target
-         const epSquare = parts[3];
-         if (epSquare === '-') {
-             enPassantTarget = null;
-         } else {
-             if (!/^[a-h][36]$/.test(epSquare)) throw new Error("Invalid FEN: Invalid en passant square.");
-             const epCol = files.indexOf(epSquare[0]);
-             const epRow = 8 - parseInt(epSquare[1]);
-              // Basic check: EP square must be on rank 3 if black to move, rank 6 if white to move
-              if ((currentPlayer === 'white' && epRow !== 2) || (currentPlayer === 'black' && epRow !== 5)) {
-                 console.warn(`FEN Warning: EP square ${epSquare} inconsistent with player turn ${currentPlayer}. Parsing anyway.`);
-                 // More robust validation could check the pawn positions
-              }
-             enPassantTarget = [epRow, epCol];
-         }
+        // 4. En Passant Target
+        const epSquare = parts[3];
+        if (epSquare === '-') {
+            enPassantTarget = null;
+        } else {
+            if (!/^[a-h][36]$/.test(epSquare)) throw new Error("Invalid FEN: Invalid en passant square.");
+            const epCol = files.indexOf(epSquare[0]);
+            const epRow = 8 - parseInt(epSquare[1]);
+            // Basic check: EP square must be on rank 3 if black to move, rank 6 if white to move
+            if ((currentPlayer === 'white' && epRow !== 2) || (currentPlayer === 'black' && epRow !== 5)) {
+                console.warn(`FEN Warning: EP square ${epSquare} inconsistent with player turn ${currentPlayer}. Parsing anyway.`);
+                // More robust validation could check the pawn positions
+            }
+            enPassantTarget = [epRow, epCol];
+        }
 
-         // 5. Halfmove Clock
-         halfMoveClock = parseInt(parts[4]);
-         if (isNaN(halfMoveClock) || halfMoveClock < 0) throw new Error("Invalid FEN: Invalid halfmove clock.");
+        // 5. Halfmove Clock
+        halfMoveClock = parseInt(parts[4]);
+        if (isNaN(halfMoveClock) || halfMoveClock < 0) throw new Error("Invalid FEN: Invalid halfmove clock.");
 
-         // 6. Fullmove Number
-         fullMoveNumber = parseInt(parts[5]);
-         if (isNaN(fullMoveNumber) || fullMoveNumber < 1) throw new Error("Invalid FEN: Invalid fullmove number.");
+        // 6. Fullmove Number
+        fullMoveNumber = parseInt(parts[5]);
+        if (isNaN(fullMoveNumber) || fullMoveNumber < 1) throw new Error("Invalid FEN: Invalid fullmove number.");
 
-         return true; // Success
-     } catch (e) {
-         console.error("FEN Parsing Error:", e.message, "FEN:", fen);
-         return false; // Failure
-     }
+        return true; // Success
+    } catch (e) {
+        console.error("FEN Parsing Error:", e.message, "FEN:", fen);
+        return false; // Failure
+    }
 }
 
 
@@ -610,69 +630,69 @@ function checkGameEndConditions(colorToCheck) {
 }
 
 function checkThreefoldRepetition() {
-     if (moveHistory.length < 8) return false;
-     // Compare piece placement, turn, castling, EP state. Clocks don't matter for repetition.
-     const currentFENKey = boardToFEN(initialBoard).split(' ').slice(0, 4).join(' ');
-     let count = 0;
-     // Check current position against history
-     for (const historyEntry of moveHistory) {
-         const pastFENKey = historyEntry.fenBefore.split(' ').slice(0, 4).join(' ');
-         if (pastFENKey === currentFENKey) {
-             count++;
-         }
-     }
-     // The current position counts once implicitly. Check if it occurred >= 2 times *before*.
-     return count >= 2; // Position occurred 3 or more times in total
+    if (moveHistory.length < 8) return false;
+    // Compare piece placement, turn, castling, EP state. Clocks don't matter for repetition.
+    const currentFENKey = boardToFEN(initialBoard).split(' ').slice(0, 4).join(' ');
+    let count = 0;
+    // Check current position against history
+    for (const historyEntry of moveHistory) {
+        const pastFENKey = historyEntry.fenBefore.split(' ').slice(0, 4).join(' ');
+        if (pastFENKey === currentFENKey) {
+            count++;
+        }
+    }
+    // The current position counts once implicitly. Check if it occurred >= 2 times *before*.
+    return count >= 2; // Position occurred 3 or more times in total
 }
 
 function checkInsufficientMaterial() {
-     const piecesOnBoard = [];
-     let whiteBishops = [], blackBishops = [];
-     let whiteKnights = 0, blackKnights = 0;
-     let whitePawns = 0, blackPawns = 0;
-     let whiteRooks = 0, blackRooks = 0;
-     let whiteQueens = 0, blackQueens = 0;
+    const piecesOnBoard = [];
+    let whiteBishops = [], blackBishops = [];
+    let whiteKnights = 0, blackKnights = 0;
+    let whitePawns = 0, blackPawns = 0;
+    let whiteRooks = 0, blackRooks = 0;
+    let whiteQueens = 0, blackQueens = 0;
 
-     for (let r = 0; r < 8; r++) {
-         for (let c = 0; c < 8; c++) {
-             const piece = initialBoard[r][c];
-             if (piece) {
-                 piecesOnBoard.push(piece);
-                 const type = piece.toLowerCase();
-                 const color = (piece === piece.toUpperCase()) ? 'white' : 'black';
-                 if (type === 'p') { if (color === 'white') whitePawns++; else blackPawns++; }
-                 else if (type === 'r') { if (color === 'white') whiteRooks++; else blackRooks++; }
-                 else if (type === 'q') { if (color === 'white') whiteQueens++; else blackQueens++; }
-                 else if (type === 'n') { if (color === 'white') whiteKnights++; else blackKnights++; }
-                 else if (type === 'b') {
-                     const squareColor = (r + c) % 2; // 0=light, 1=dark
-                     if (color === 'white') whiteBishops.push(squareColor);
-                     else blackBishops.push(squareColor);
-                 }
-             }
-         }
-     }
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const piece = initialBoard[r][c];
+            if (piece) {
+                piecesOnBoard.push(piece);
+                const type = piece.toLowerCase();
+                const color = (piece === piece.toUpperCase()) ? 'white' : 'black';
+                if (type === 'p') { if (color === 'white') whitePawns++; else blackPawns++; }
+                else if (type === 'r') { if (color === 'white') whiteRooks++; else blackRooks++; }
+                else if (type === 'q') { if (color === 'white') whiteQueens++; else blackQueens++; }
+                else if (type === 'n') { if (color === 'white') whiteKnights++; else blackKnights++; }
+                else if (type === 'b') {
+                    const squareColor = (r + c) % 2; // 0=light, 1=dark
+                    if (color === 'white') whiteBishops.push(squareColor);
+                    else blackBishops.push(squareColor);
+                }
+            }
+        }
+    }
 
-     // If any pawns, rooks, or queens exist, it's NOT insufficient material
-     if (whitePawns > 0 || blackPawns > 0 || whiteRooks > 0 || blackRooks > 0 || whiteQueens > 0 || blackQueens > 0) {
-         return false;
-     }
+    // If any pawns, rooks, or queens exist, it's NOT insufficient material
+    if (whitePawns > 0 || blackPawns > 0 || whiteRooks > 0 || blackRooks > 0 || whiteQueens > 0 || blackQueens > 0) {
+        return false;
+    }
 
-     const whiteMinorPieces = whiteKnights + whiteBishops.length;
-     const blackMinorPieces = blackKnights + blackBishops.length;
+    const whiteMinorPieces = whiteKnights + whiteBishops.length;
+    const blackMinorPieces = blackKnights + blackBishops.length;
 
-     // K vs K
-     if (whiteMinorPieces === 0 && blackMinorPieces === 0) return true;
-     // K vs K + N or K vs K + B
-     if ((whiteMinorPieces === 1 && blackMinorPieces === 0) || (whiteMinorPieces === 0 && blackMinorPieces === 1)) return true;
-     // K + B vs K + B (Bishops on same color squares)
-     if (whiteKnights === 0 && blackKnights === 0 && whiteBishops.length === 1 && blackBishops.length === 1) {
-         if (whiteBishops[0] === blackBishops[0]) return true; // Same color bishop draw
-     }
-      // K+N+N vs K is generally NOT a draw (can force mate), so we don't check for it here.
-      // Other complex cases like KBN vs K are winning.
+    // K vs K
+    if (whiteMinorPieces === 0 && blackMinorPieces === 0) return true;
+    // K vs K + N or K vs K + B
+    if ((whiteMinorPieces === 1 && blackMinorPieces === 0) || (whiteMinorPieces === 0 && blackMinorPieces === 1)) return true;
+    // K + B vs K + B (Bishops on same color squares)
+    if (whiteKnights === 0 && blackKnights === 0 && whiteBishops.length === 1 && blackBishops.length === 1) {
+        if (whiteBishops[0] === blackBishops[0]) return true; // Same color bishop draw
+    }
+    // K+N+N vs K is generally NOT a draw (can force mate), so we don't check for it here.
+    // Other complex cases like KBN vs K are winning.
 
-     return false; // Assume sufficient material otherwise
+    return false; // Assume sufficient material otherwise
 }
 
 // --- AI Logic (Stockfish Interaction) ---
@@ -686,21 +706,21 @@ function initStockfish() {
         console.error("Failed to init Stockfish Worker:", e);
         updateGameStatus("Erreur: Worker IA non supporté.");
         isStockfishReady = false; // Ensure it's false
-         if (modeAiButton) modeAiButton.disabled = true;
-         if (modeAiAiButton) modeAiAiButton.disabled = true;
+        if (modeAiButton) modeAiButton.disabled = true;
+        if (modeAiAiButton) modeAiAiButton.disabled = true;
     }
 }
 
 function handleStockfishMessage(event) {
     const message = event.data;
-    // console.log("Stockfish:", message);
-    if (message === 'uciok') stockfish.postMessage('isready');
-    else if (message === 'readyok') {
+    if (message === 'uciok') {
+        stockfish.postMessage('isready');
+    } else if (message === 'readyok') {
         isStockfishReady = true;
         console.log("Stockfish ready.");
-         if (gameMode === 'ai-vs-ai' && currentPlayer === 'white' && aiDifficultyWhite && aiDifficultyBlack && !isGameOver && !isStockfishThinking) {
-             requestAiMove();
-         }
+        if (gameMode === 'ai-vs-ai' && currentPlayer === 'white' && aiDifficultyWhite && aiDifficultyBlack && !isGameOver && !isStockfishThinking) {
+            requestAiMove();
+        }
     } else if (message.startsWith('bestmove')) {
         isStockfishThinking = false;
         updateControlsState();
@@ -709,8 +729,17 @@ function handleStockfishMessage(event) {
             stockfishResponseCallback(bestmove);
             stockfishResponseCallback = null;
         } else {
-            console.error("Stockfish response received, but no callback was set!"); // Could happen if game ended while thinking
+            safeConsoleError("Stockfish response received, but no callback was set!");
         }
+    }
+}
+
+function safeConsoleError(...args) {
+    if (console && typeof console.error === 'function') {
+        console.error(...args);
+    } else {
+        // Fallback si console.error n'existe pas
+        console.log(...args);
     }
 }
 
@@ -748,7 +777,7 @@ function requestAiMove() {
 }
 
 // Détermine la profondeur de recherche en fonction de la difficulté et de la couleur
-function getAiSearchDepth(difficulty, color) {
+function getAiSearchDepth(difficulty) {
     const diffLower = difficulty.toLowerCase();
     let searchDepth;
     if (diffLower === 'noob') searchDepth = 1;
@@ -760,14 +789,15 @@ function getAiSearchDepth(difficulty, color) {
     else if (diffLower === 'magnus carlsen') searchDepth = 12;
     else if (diffLower === 'unbeatable') searchDepth = 15;
     else if (diffLower === 'adaptative') {
-         const ratingDiff = aiRating - playerRating;
-         if (ratingDiff < -300) searchDepth = 1;
-         else if (ratingDiff < -100) searchDepth = 2;
-         else if (ratingDiff < 100) searchDepth = 3;
-         else if (ratingDiff < 300) searchDepth = 4;
-         else searchDepth = 5;
-    } else {
-         searchDepth = 2;
+        const ratingDiff = aiRating - playerRating;
+        if (ratingDiff < -300) searchDepth = 1;
+        else if (ratingDiff < -100) searchDepth = 2;
+        else if (ratingDiff < 100) searchDepth = 3;
+        else if (ratingDiff < 300) searchDepth = 4;
+        else searchDepth = 5;
+    }
+    else {
+        searchDepth = 2;
     }
     return searchDepth;
 }
@@ -778,97 +808,99 @@ function handleAiMoveResponse(bestmove) {
         updateControlsState();
         return;
     }
-   console.log(`Stockfish (${currentPlayer}) bestmove: ${bestmove}`);
-   if (!bestmove || bestmove === '(none)') {
-       console.error("Stockfish returned no valid move.");
-       updateGameStatus(`Erreur IA (${currentPlayer}) : aucun coup valide.`);
-       if (gameMode === 'ai-vs-ai') endGame('draw', 'erreur IA');
-       isStockfishThinking = false; // Reset flag
-       updateControlsState();
-       return;
-   }
+    console.log(`Stockfish (${currentPlayer}) bestmove: ${bestmove}`);
+    if (!bestmove || bestmove === '(none)') {
+        console.error("Stockfish returned no valid move.");
+        updateGameStatus(`Erreur IA (${currentPlayer}) : aucun coup valide.`);
+        if (gameMode === 'ai-vs-ai') endGame('draw', 'erreur IA');
+        isStockfishThinking = false; // Reset flag
+        updateControlsState();
+        return;
+    }
 
     // --- Début: Cheat Anti-Répétition (Mode IA vs IA uniquement) ---
     let originalBestmove = bestmove; // Garder une trace
     let moveChosen = bestmove; // Le coup qui sera effectivement joué
 
     if (gameMode === 'ai-vs-ai' && moveHistory.length > 4) { // Vérifier seulement après quelques coups
-       const fileToColRep = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
-       const fromColRep = fileToColRep[bestmove[0]];
-       const fromRowRep = 8 - parseInt(bestmove[1]);
-       const toColRep = fileToColRep[bestmove[2]];
-       const toRowRep = 8 - parseInt(bestmove[3]);
-       const promotionRep = bestmove.length === 5 ? bestmove[4] : null;
+        const fileToColRep = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
+        const fromColRep = fileToColRep[bestmove[0]];
+        const fromRowRep = 8 - parseInt(bestmove[1]);
+        const toColRep = fileToColRep[bestmove[2]];
+        const toRowRep = 8 - parseInt(bestmove[3]);
+        const promotionRep = bestmove.length === 5 ? bestmove[4] : null;
 
-       const resultingFenKey = getResultanteFenKeyAfterMove(fromRowRep, fromColRep, toRowRep, toColRep, promotionRep);
+        const resultingFenKey = getResultanteFenKeyAfterMove(fromRowRep, fromColRep, toRowRep, toColRep, promotionRep);
 
-       if (resultingFenKey) {
-           let repetitionCount = 0;
-           for (const historyEntry of moveHistory) {
-               // Comparer uniquement les parties pertinentes de la FEN pour la règle des 3 coups
-               const pastFenKey = historyEntry.fenBefore.split(' ').slice(0, 4).join(' ');
-               if (pastFenKey === resultingFenKey) {
-                   repetitionCount++;
-               }
-           }
+        if (resultingFenKey) {
+            let repetitionCount = 0;
+            for (const historyEntry of moveHistory) {
+                // Comparer uniquement les parties pertinentes de la FEN pour la règle des 3 coups
+                const pastFenKey = historyEntry.fenBefore.split(' ').slice(0, 4).join(' ');
+                if (pastFenKey === resultingFenKey) {
+                    repetitionCount++;
+                }
+            }
 
-           if (repetitionCount >= 2) { // Si ce coup mène à la 3ème répétition
+            if (repetitionCount >= 2) { // Si ce coup mène à la 3ème répétition
                 if (typeof window.console.warn === 'function') {
                     window.console.warn(`CHEAT: ${currentPlayer} allait répéter la position (${resultingFenKey}) avec ${bestmove}. Recherche d'alternative...`);
                 } else {
                     console.log(`CHEAT: ${currentPlayer} allait répéter la position (${resultingFenKey}) avec ${bestmove}. Recherche d'alternative...`);
                 }
-               const allMoves = getAllLegalMoves(currentPlayer);
-               const alternativeMoves = allMoves.filter(move => {
-                   const uci = moveToUCI(move);
-                   // Exclure le coup original ET les promotions différentes du même déplacement de pion (simplification)
-                   return uci.substring(0, 4) !== bestmove.substring(0, 4);
-               });
+                const allMoves = getAllLegalMoves(currentPlayer);
+                const alternativeMoves = allMoves.filter(move => {
+                    const uci = moveToUCI(move);
+                    // Exclure le coup original ET les promotions différentes du même déplacement de pion (simplification)
+                    return uci.substring(0, 4) !== bestmove.substring(0, 4);
+                });
 
-               if (alternativeMoves.length > 0) {
-                   // Choisir une alternative (presque) aléatoirement
-                   const randomIndex = Math.floor(Math.random() * alternativeMoves.length);
-                   const alternative = alternativeMoves[randomIndex];
-                   moveChosen = moveToUCI(alternative); // Oublie la promotion pour l'alternative simple
-                   console.log(`CHEAT: Alternative choisie: ${moveChosen}`);
-                   updateGameStatus(`IA (${currentPlayer}) évite la répétition avec ${moveChosen}`);
+                if (alternativeMoves.length > 0) {
+                    // Choisir une alternative (presque) aléatoirement
+                    const randomIndex = Math.floor(Math.random() * alternativeMoves.length);
+                    const alternative = alternativeMoves[randomIndex];
+                    moveChosen = moveToUCI(alternative); // Oublie la promotion pour l'alternative simple
+                    console.log(`CHEAT: Alternative choisie: ${moveChosen}`);
+                    updateGameStatus(`IA (${currentPlayer}) évite la répétition avec ${moveChosen}`);
                     // Vider l'historique simple pour éviter les boucles immédiates (brut mais simple)
                     // aiMoveHistory = { white: [], black: [] };
-               } else {
-                   console.log(`CHEAT: Répétition inévitable avec ${bestmove}, aucune alternative trouvée.`);
-                   moveChosen = bestmove; // Jouer le coup répétitif car forcé
-               }
-           }
-       } else {
+                } else {
+                    console.log(`CHEAT: Répétition inévitable avec ${bestmove}, aucune alternative trouvée.`);
+                    moveChosen = bestmove; // Jouer le coup répétitif car forcé
+                }
+            }
+        } else {
             console.error("Erreur lors de la simulation du coup pour la vérification de répétition.");
             moveChosen = bestmove; // Jouer le coup original en cas d'erreur de simulation
-       }
+        }
     }
-   // --- Fin: Cheat Anti-Répétition ---
+    // --- Fin: Cheat Anti-Répétition ---
 
 
-   // Parse le coup choisi (peut être l'original ou l'alternatif)
-   const fileToCol = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
-   const fromCol = fileToCol[moveChosen[0]];
-   const fromRow = 8 - parseInt(moveChosen[1]);
-   const toCol = fileToCol[moveChosen[2]];
-   const toRow = 8 - parseInt(moveChosen[3]);
-   // Utiliser la promotion du *coup original* si le coup choisi est le même, sinon null
-   const promotion = (moveChosen === originalBestmove && moveChosen.length === 5) ? moveChosen[4] : null;
+    // Parse le coup choisi (peut être l'original ou l'alternatif)
+    const fileToCol = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5, g: 6, h: 7 };
+    const fromCol = fileToCol[moveChosen[0]];
+    const fromRow = 8 - parseInt(moveChosen[1]);
+    const toCol = fileToCol[moveChosen[2]];
+    const toRow = 8 - parseInt(moveChosen[3]);
+    // Utiliser la promotion du *coup original* si le coup choisi est le même, sinon null
+    const promotion = (moveChosen === originalBestmove && moveChosen.length === 5) ? moveChosen[4] : null;
 
 
-   // Exécuter le coup choisi
-   const moveSuccess = makeMove(fromRow, fromCol, toRow, toCol, promotion);
+    // Exécuter le coup choisi
+    const moveSuccess = makeMove(fromRow, fromCol, toRow, toCol, promotion);
 
-   // Ralentissement pour IA vs IA
-   if (moveSuccess && !isGameOver && gameMode === 'ai-vs-ai') {
-        const delay = 1500; // Délai en millisecondes (1.5 secondes) - Ajustez si besoin
-        console.log(`IA vs IA: Attente de ${delay}ms avant le prochain coup.`);
-        setTimeout(requestAiMove, delay);
-   } else if (moveSuccess && gameMode === 'ai' && currentPlayer === 'black') {
-        // Le déclenchement normal pour Joueur vs IA reste rapide (géré dans makeMove/handleSquareClick)
-   }
-    // makeMove gère déjà la fin de partie et les mises à jour d'état
+    if (!moveSuccess) {
+        isStockfishThinking = false;
+        updateControlsState();
+        return;
+    }
+
+    if (moveSuccess && !isGameOver && gameMode === 'ai-vs-ai') {
+        setTimeout(requestAiMove, aiDelayEnabled ? AI_DELAY_TIME : 0);
+    } else if (moveSuccess && gameMode === 'ai' && currentPlayer === 'black') {
+        
+    }
 }
 
 // --- Core Move Execution Logic ---
@@ -915,13 +947,13 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
     if (isPromotion) {
         if (!promotionChoice || !['q', 'r', 'n', 'b'].includes(promotionChoice.toLowerCase())) {
             console.error("makeMove Error: Invalid or missing promotion choice for promotion move.");
-             // If called programmatically (AI) without valid choice, default to Queen?
-             if (gameMode === 'ai' || gameMode === 'ai-vs-ai') {
-                 promotionChoice = 'q';
-                 console.warn("Defaulting AI promotion to Queen.");
-             } else {
-                 return false; // Human move requires explicit valid choice via modal
-             }
+            // If called programmatically (AI) without valid choice, default to Queen?
+            if (gameMode === 'ai' || gameMode === 'ai-vs-ai') {
+                promotionChoice = 'q';
+                console.warn("Defaulting AI promotion to Queen.");
+            } else {
+                return false; // Human move requires explicit valid choice via modal
+            }
         }
         actualPromotion = (color === 'white' ? promotionChoice.toUpperCase() : promotionChoice.toLowerCase());
         soundToPlay = 'promote';
@@ -941,10 +973,10 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
         const capturedPawnCol = toCol;   // and same file as the moving pawn *ended*
         effectiveCapturedPiece = initialBoard[capturedPawnRow][capturedPawnCol]; // Get the actual pawn
         if (!effectiveCapturedPiece || effectiveCapturedPiece.toLowerCase() !== 'p') {
-             console.error("makeMove Error: En passant capture failed - expected pawn not found at", [capturedPawnRow, capturedPawnCol]);
-             // Attempt to recover? Revert history entry? Very tricky.
-             moveHistory.pop(); // Remove potentially incorrect history entry
-             return false;
+            console.error("makeMove Error: En passant capture failed - expected pawn not found at", [capturedPawnRow, capturedPawnCol]);
+            // Attempt to recover? Revert history entry? Very tricky.
+            moveHistory.pop(); // Remove potentially incorrect history entry
+            return false;
         }
         initialBoard[capturedPawnRow][capturedPawnCol] = ''; // Remove the captured pawn
         flags.isEnPassant = true;
@@ -960,8 +992,8 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
         const rookPiece = initialBoard[toRow][rookFromCol]; // Should be 'R' or 'r'
         if (!rookPiece || rookPiece.toLowerCase() !== 'r') {
             console.error("makeMove Error: Castling failed - rook not found at", [toRow, rookFromCol]);
-             moveHistory.pop();
-             return false;
+            moveHistory.pop();
+            return false;
         }
         initialBoard[toRow][rookToCol] = rookPiece;
         initialBoard[toRow][rookFromCol] = '';
@@ -972,19 +1004,19 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
     }
     // 3. Handle Regular Capture Sound
     else if (capturedPiece) {
-         if (capturedPiece.toLowerCase() === 'k') { // Should be prevented by validation
-             console.error("Illegal King capture detected!");
-             moveHistory.pop();
-             return false;
-         }
-         soundToPlay = 'capture';
+        if (capturedPiece.toLowerCase() === 'k') { // Should be prevented by validation
+            console.error("Illegal King capture detected!");
+            moveHistory.pop();
+            return false;
+        }
+        soundToPlay = 'capture';
     }
 
     // --- Update Captured Pieces List ---
-     if (effectiveCapturedPiece) { // Use effectiveCapturedPiece which includes EP captures
-         if (effectiveCapturedPiece.toUpperCase() === effectiveCapturedPiece) capturedBlack.push(effectiveCapturedPiece.toLowerCase()); // White piece captured
-         else capturedWhite.push(effectiveCapturedPiece.toUpperCase()); // Black piece captured
-     }
+    if (effectiveCapturedPiece) { // Use effectiveCapturedPiece which includes EP captures
+        if (effectiveCapturedPiece.toUpperCase() === effectiveCapturedPiece) capturedBlack.push(effectiveCapturedPiece.toLowerCase()); // White piece captured
+        else capturedWhite.push(effectiveCapturedPiece.toUpperCase()); // Black piece captured
+    }
 
     // --- Move the Main Piece on Board ---
     initialBoard[toRow][toCol] = actualPromotion ? actualPromotion : movingPiece;
@@ -1010,7 +1042,7 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
 
     // Update En Passant possibility for *next* turn
     if (movingPiece.toLowerCase() === 'p' && Math.abs(toRow - fromRow) === 2) {
-        enPassantTarget = [ (fromRow + toRow) / 2, fromCol ]; // Square *behind* the moved pawn
+        enPassantTarget = [(fromRow + toRow) / 2, fromCol]; // Square *behind* the moved pawn
     } else {
         enPassantTarget = null; // Clear EP target if move wasn't pawn double step
     }
@@ -1030,17 +1062,17 @@ function makeMove(fromRow, fromCol, toRow, toCol, promotionChoice = null) {
     // Check if the game ended due to this move (for the player whose turn it is NOW)
     if (!checkGameEndConditions(currentPlayer)) {
         // Game continues, update status text based on check status of the NEW player
-         if (isKingInCheck(currentPlayer)) {
-             updateGameStatus(`Échec au roi ${currentPlayer === 'white' ? 'blanc' : 'noir'} !`);
-             // Check sound already played by checkAndUpdateKingStatus maybe? No, play here based on state *after* move.
-             // Reconsider: playSound('check') should probably be here, not in checkAndUpdateKingStatus.
-             // Let's move it here.
-              playSound('check');
-         } else {
-             updateGameStatus(`Au tour des ${currentPlayer === 'white' ? 'Blancs' : 'Noirs'}.`);
-         }
+        if (isKingInCheck(currentPlayer)) {
+            updateGameStatus(`Échec au roi ${currentPlayer === 'white' ? 'blanc' : 'noir'} !`);
+            // Check sound already played by checkAndUpdateKingStatus maybe? No, play here based on state *after* move.
+            // Reconsider: playSound('check') should probably be here, not in checkAndUpdateKingStatus.
+            // Let's move it here.
+            playSound('check');
+        } else {
+            updateGameStatus(`Au tour des ${currentPlayer === 'white' ? 'Blancs' : 'Noirs'}.`);
+        }
     } else {
-         // Game ended, endGame function handles status messages and sounds
+        // Game ended, endGame function handles status messages and sounds
     }
 
     updateControlsState(); // Update button states (e.g., undo)
@@ -1108,27 +1140,27 @@ function handleSquareClick(event) {
                 // Not promotion, execute move directly
                 const success = makeMove(fromRow, fromCol, row, col);
                 if (success && gameMode === 'ai' && currentPlayer === 'black') {
-                    requestAiMove();
+                    setTimeout(requestAiMove, aiDelayEnabled ? AI_DELAY_TIME : 0);
                 }
             }
 
         } else {
             // --- Case 3: Clicked an invalid square for the selected piece ---
-             if (pieceOnSquare && (pieceOnSquare.toUpperCase() === pieceOnSquare ? 'white' : 'black') === currentPlayer) {
-                 // Clicked another of own pieces - switch selection
-                 selectedPiece.element.classList.remove('selected'); // Deselect old
-                 selectedPiece = { element: square, row: row, col: col }; // Select new
-                 square.classList.add('selected');
-                 const newMoves = getPossibleMoves(pieceOnSquare, row, col);
-                 highlightMoves(newMoves);
-                 playSound('click');
-             } else {
-                 // Clicked empty or opponent piece - deselect
-                 playSound('illegal');
-                 selectedPiece.element.classList.remove('selected');
-                 selectedPiece = null;
-                 highlightMoves([]);
-             }
+            if (pieceOnSquare && (pieceOnSquare.toUpperCase() === pieceOnSquare ? 'white' : 'black') === currentPlayer) {
+                // Clicked another of own pieces - switch selection
+                selectedPiece.element.classList.remove('selected'); // Deselect old
+                selectedPiece = { element: square, row: row, col: col }; // Select new
+                square.classList.add('selected');
+                const newMoves = getPossibleMoves(pieceOnSquare, row, col);
+                highlightMoves(newMoves);
+                playSound('click');
+            } else {
+                // Clicked empty or opponent piece - deselect
+                playSound('illegal');
+                selectedPiece.element.classList.remove('selected');
+                selectedPiece = null;
+                highlightMoves([]);
+            }
         }
 
     } else if (pieceOnSquare && (pieceOnSquare.toUpperCase() === pieceOnSquare ? 'white' : 'black') === currentPlayer) {
@@ -1203,8 +1235,8 @@ function createBoard() {
             square.style.cursor = (isGameOver || (gameMode === 'ai' && currentPlayer === 'black') || gameMode === 'ai-vs-ai' || isStockfishThinking) ? 'default' : 'pointer';
 
             if (lastMove &&
-               ((rowIndex === lastMove.from[0] && colIndex === lastMove.from[1]) ||
-                (rowIndex === lastMove.to[0] && colIndex === lastMove.to[1]))) {
+                ((rowIndex === lastMove.from[0] && colIndex === lastMove.from[1]) ||
+                    (rowIndex === lastMove.to[0] && colIndex === lastMove.to[1]))) {
                 square.classList.add('last-move');
             }
 
@@ -1215,13 +1247,13 @@ function createBoard() {
 
     // ...existing code re-applying selection and check highlights...
     if (selectedPiece?.element) {
-         const newSelectedSquare = chessboard.querySelector(`.square[data-row="${selectedPiece.row}"][data-col="${selectedPiece.col}"]`);
-         if (newSelectedSquare) {
-             newSelectedSquare.classList.add('selected');
-             selectedPiece.element = newSelectedSquare;
-         } else {
-             selectedPiece = null;
-         }
+        const newSelectedSquare = chessboard.querySelector(`.square[data-row="${selectedPiece.row}"][data-col="${selectedPiece.col}"]`);
+        if (newSelectedSquare) {
+            newSelectedSquare.classList.add('selected');
+            selectedPiece.element = newSelectedSquare;
+        } else {
+            selectedPiece = null;
+        }
     }
     checkAndUpdateKingStatus();
 }
@@ -1241,25 +1273,25 @@ function highlightMoves(moves) {
             } else { // Target is empty
                 square.classList.add('highlight');
             }
-             // Highlight en passant differently?
+            // Highlight en passant differently?
             if (enPassantTarget && r === enPassantTarget[0] && c === enPassantTarget[1]) {
-                 // Check if the move is actually a pawn move to the EP square
-                 if (selectedPiece && initialBoard[selectedPiece.row][selectedPiece.col]?.toLowerCase() === 'p') {
-                     square.classList.add('en-passant-target'); // Add specific class for styling
-                     square.classList.remove('highlight'); // Remove generic highlight maybe
-                 }
+                // Check if the move is actually a pawn move to the EP square
+                if (selectedPiece && initialBoard[selectedPiece.row][selectedPiece.col]?.toLowerCase() === 'p') {
+                    square.classList.add('en-passant-target'); // Add specific class for styling
+                    square.classList.remove('highlight'); // Remove generic highlight maybe
+                }
             }
         }
     });
 }
 
 function updateAllUI() {
-     updateTimerDisplay();
-     updateCapturedPieces();
-     updateProgressBar();
-     updateRatingDisplay();
-     updatePlayerTurnIndicator();
-     // Move list UI is updated incrementally
+    updateTimerDisplay();
+    updateCapturedPieces();
+    updateProgressBar();
+    updateRatingDisplay();
+    updatePlayerTurnIndicator();
+    // Move list UI is updated incrementally
 }
 
 function updateGameStatus(statusText) {
@@ -1267,45 +1299,45 @@ function updateGameStatus(statusText) {
 }
 
 function updateCapturedPieces() {
-     if (capturedWhiteEl) capturedWhiteEl.innerHTML = capturedWhite.sort((a,b) => (pieceValues[b.toLowerCase()] || 0) - (pieceValues[a.toLowerCase()] || 0)).map(p => pieces[p.toUpperCase()]).join('');
-     if (capturedBlackEl) capturedBlackEl.innerHTML = capturedBlack.sort((a,b) => (pieceValues[b.toLowerCase()] || 0) - (pieceValues[a.toLowerCase()] || 0)).map(p => pieces[p.toLowerCase()]).join('');
+    if (capturedWhiteEl) capturedWhiteEl.innerHTML = capturedWhite.sort((a, b) => (pieceValues[b.toLowerCase()] || 0) - (pieceValues[a.toLowerCase()] || 0)).map(p => pieces[p.toUpperCase()]).join('');
+    if (capturedBlackEl) capturedBlackEl.innerHTML = capturedBlack.sort((a, b) => (pieceValues[b.toLowerCase()] || 0) - (pieceValues[a.toLowerCase()] || 0)).map(p => pieces[p.toLowerCase()]).join('');
 }
 
 function updateProgressBar() {
-     if (!whiteProgressEl || !blackProgressEl) return;
-     // capturedWhite = black pieces captured BY white
-     // capturedBlack = white pieces captured BY black
-     const whiteMaterialAdvantage = capturedWhite.reduce((s, p) => s + (pieceValues[p.toLowerCase()] || 0), 0);
-     const blackMaterialAdvantage = capturedBlack.reduce((s, p) => s + (pieceValues[p.toLowerCase()] || 0), 0);
-     const diff = whiteMaterialAdvantage - blackMaterialAdvantage;
+    if (!whiteProgressEl || !blackProgressEl) return;
+    // capturedWhite = black pieces captured BY white
+    // capturedBlack = white pieces captured BY black
+    const whiteMaterialAdvantage = capturedWhite.reduce((s, p) => s + (pieceValues[p.toLowerCase()] || 0), 0);
+    const blackMaterialAdvantage = capturedBlack.reduce((s, p) => s + (pieceValues[p.toLowerCase()] || 0), 0);
+    const diff = whiteMaterialAdvantage - blackMaterialAdvantage;
 
-     const maxAdvantage = 10; // Cap visual difference at +/- 10 points for scaling
-     const scaledDiff = Math.max(-maxAdvantage, Math.min(maxAdvantage, diff));
-     let whitePerc = 50 + (scaledDiff / maxAdvantage) * 50;
-     whitePerc = Math.max(0, Math.min(100, whitePerc));
+    const maxAdvantage = 10; // Cap visual difference at +/- 10 points for scaling
+    const scaledDiff = Math.max(-maxAdvantage, Math.min(maxAdvantage, diff));
+    let whitePerc = 50 + (scaledDiff / maxAdvantage) * 50;
+    whitePerc = Math.max(0, Math.min(100, whitePerc));
 
-     whiteProgressEl.style.width = `${whitePerc}%`;
-     blackProgressEl.style.width = `${100 - whitePerc}%`;
+    whiteProgressEl.style.width = `${whitePerc}%`;
+    blackProgressEl.style.width = `${100 - whitePerc}%`;
 
-     if (scoreAdvantageEl) {
-         if (diff > 0) scoreAdvantageEl.textContent = `+${diff}`;
-         else if (diff < 0) scoreAdvantageEl.textContent = `${diff}`; // diff is already negative
-         else scoreAdvantageEl.textContent = '';
-         scoreAdvantageEl.className = diff > 0 ? 'score-white' : (diff < 0 ? 'score-black' : '');
-     }
+    if (scoreAdvantageEl) {
+        if (diff > 0) scoreAdvantageEl.textContent = `+${diff}`;
+        else if (diff < 0) scoreAdvantageEl.textContent = `${diff}`; // diff is already negative
+        else scoreAdvantageEl.textContent = '';
+        scoreAdvantageEl.className = diff > 0 ? 'score-white' : (diff < 0 ? 'score-black' : '');
+    }
 }
 
 function checkAndUpdateKingStatus() {
-     if (isGameOver) { // Clear highlights if game over
-         highlightKingInCheck('white', false);
-         highlightKingInCheck('black', false);
-         return;
-     };
-     const whiteInCheck = isKingInCheck('white');
-     const blackInCheck = isKingInCheck('black');
-     highlightKingInCheck('white', whiteInCheck);
-     highlightKingInCheck('black', blackInCheck);
-     // Check sound is played in makeMove now, based on state *after* the move.
+    if (isGameOver) { // Clear highlights if game over
+        highlightKingInCheck('white', false);
+        highlightKingInCheck('black', false);
+        return;
+    };
+    const whiteInCheck = isKingInCheck('white');
+    const blackInCheck = isKingInCheck('black');
+    highlightKingInCheck('white', whiteInCheck);
+    highlightKingInCheck('black', blackInCheck);
+    // Check sound is played in makeMove now, based on state *after* the move.
 }
 
 function highlightKingInCheck(color, inCheck) {
@@ -1392,7 +1424,7 @@ function updateTimerDisplay() {
     if (!whiteTimeEl || !blackTimeEl) return;
     whiteTimeEl.textContent = formatTime(whiteTime);
     blackTimeEl.textContent = formatTime(blackTime);
-     // Use timeout > 0 check to avoid highlighting 0:00 as urgent
+    // Use timeout > 0 check to avoid highlighting 0:00 as urgent
     whiteTimeEl.classList.toggle('urgent', whiteTime <= 30 && whiteTime > 0 && !isGameOver);
     blackTimeEl.classList.toggle('urgent', blackTime <= 30 && blackTime > 0 && !isGameOver);
 }
@@ -1402,10 +1434,10 @@ function updateStatistics() {
     const winsEl = document.getElementById('wins');
     const lossesEl = document.getElementById('losses');
     const drawsEl = document.getElementById('draws');
-    if(gamesPlayedEl) gamesPlayedEl.textContent = gamesPlayed;
-    if(winsEl) winsEl.textContent = wins;
-    if(lossesEl) lossesEl.textContent = losses;
-    if(drawsEl) drawsEl.textContent = draws;
+    if (gamesPlayedEl) gamesPlayedEl.textContent = gamesPlayed;
+    if (winsEl) winsEl.textContent = wins;
+    if (lossesEl) lossesEl.textContent = losses;
+    if (drawsEl) drawsEl.textContent = draws;
 }
 function updateRatings(playerWon) {
     if (gameMode !== 'ai') return;
@@ -1421,17 +1453,17 @@ function updateRatings(playerWon) {
 function updateRatingDisplay() {
     if (!player1RatingEl || !player2RatingEl || !player1NameEl || !player2NameEl) return;
     if (gameMode === 'ai') {
-         player1NameEl.textContent = "Joueur"; player2NameEl.textContent = `IA (${aiDifficulty || '?'})`;
-         player1RatingEl.textContent = playerRating; player2RatingEl.textContent = aiRating;
+        player1NameEl.textContent = "Joueur"; player2NameEl.textContent = `IA (${aiDifficulty || '?'})`;
+        player1RatingEl.textContent = playerRating; player2RatingEl.textContent = aiRating;
     } else if (gameMode === 'human') {
-         player1NameEl.textContent = "Joueur 1"; player2NameEl.textContent = "Joueur 2";
-         player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
+        player1NameEl.textContent = "Joueur 1"; player2NameEl.textContent = "Joueur 2";
+        player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
     } else if (gameMode === 'ai-vs-ai') {
-         player1NameEl.textContent = `IA Blanc (${aiDifficultyWhite || '?'})`; player2NameEl.textContent = `IA Noir (${aiDifficultyBlack || '?'})`;
-         player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
+        player1NameEl.textContent = `IA Blanc (${aiDifficultyWhite || '?'})`; player2NameEl.textContent = `IA Noir (${aiDifficultyBlack || '?'})`;
+        player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
     } else { // Default / Main Menu
-         player1NameEl.textContent = "Joueur 1"; player2NameEl.textContent = "Joueur 2";
-         player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
+        player1NameEl.textContent = "Joueur 1"; player2NameEl.textContent = "Joueur 2";
+        player1RatingEl.textContent = "----"; player2RatingEl.textContent = "----";
     }
 }
 
@@ -1497,24 +1529,24 @@ function showToast(message, iconClass = 'fa-info-circle', duration = 3000) {
 }
 
 function showConfetti() {
-     // Using a library like confetti-js is easier: https://github.com/catdad/canvas-confetti
-     // Basic CSS implementation:
+    // Using a library like confetti-js is easier: https://github.com/catdad/canvas-confetti
+    // Basic CSS implementation:
     const container = document.createElement('div');
     container.className = 'confetti-container'; // Needs CSS styling
     document.body.appendChild(container);
 
     const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
-                   '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50',
-                   '#ffeb3b', '#ffc107', '#ff9800'];
+        '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50',
+        '#ffeb3b', '#ffc107', '#ff9800'];
 
     for (let i = 0; i < 100; i++) { // Create 100 confetti pieces
         const confetti = document.createElement('div');
         confetti.className = 'confetti'; // Needs CSS for shape, animation
         confetti.style.left = `${Math.random() * 100}vw`;
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-         // Animation needs to be defined in CSS (e.g., falling with rotation)
-         confetti.style.animationDelay = `${Math.random() * 3}s`; // Random start delay
-         confetti.style.animationDuration = `${3 + Math.random() * 3}s`; // Random duration
+        // Animation needs to be defined in CSS (e.g., falling with rotation)
+        confetti.style.animationDelay = `${Math.random() * 3}s`; // Random start delay
+        confetti.style.animationDuration = `${3 + Math.random() * 3}s`; // Random duration
         container.appendChild(confetti);
     }
 
@@ -1531,19 +1563,19 @@ function getPossibleMovesWithoutCheck(piece, row, col, board = initialBoard) {
     const pieceType = piece.toLowerCase();
 
     const addMove = (r, c) => {
-         if (r >= 0 && r < 8 && c >= 0 && c < 8) {
-             const targetPiece = board[r][c];
-             if (!targetPiece) { // Empty square
-                 moves.push([r, c]);
-                 return true; // Can continue sliding
+        if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            const targetPiece = board[r][c];
+            if (!targetPiece) { // Empty square
+                moves.push([r, c]);
+                return true; // Can continue sliding
             } else if ((targetPiece.toUpperCase() === targetPiece ? 'white' : 'black') === opponentColor) { // Capture
-                 moves.push([r, c]);
-                 return false; // Stop sliding after capture
-             } else { // Own piece
-                 return false; // Stop sliding
-             }
-         }
-         return false; // Off board
+                moves.push([r, c]);
+                return false; // Stop sliding after capture
+            } else { // Own piece
+                return false; // Stop sliding
+            }
+        }
+        return false; // Off board
     };
 
     switch (pieceType) {
@@ -1575,23 +1607,23 @@ function getPossibleMovesWithoutCheck(piece, row, col, board = initialBoard) {
                     }
                     // 4. En Passant Capture Check (Pseudo-legal only cares if the target square matches)
                     if (enPassantTarget && oneStepRow === enPassantTarget[0] && captureCol === enPassantTarget[1]) {
-                         // Check if there's actually an opponent pawn next to the moving pawn that could have made the double step
-                         const adjacentPawnRow = row;
-                         const adjacentPawnCol = captureCol;
-                         const adjacentPiece = board[adjacentPawnRow][adjacentPawnCol];
-                         const opponentPawn = (opponentColor === 'white' ? 'P' : 'p');
-                         if (adjacentPiece === opponentPawn) {
-                             moves.push([oneStepRow, captureCol]);
-                         }
+                        // Check if there's actually an opponent pawn next to the moving pawn that could have made the double step
+                        const adjacentPawnRow = row;
+                        const adjacentPawnCol = captureCol;
+                        const adjacentPiece = board[adjacentPawnRow][adjacentPawnCol];
+                        const opponentPawn = (opponentColor === 'white' ? 'P' : 'p');
+                        if (adjacentPiece === opponentPawn) {
+                            moves.push([oneStepRow, captureCol]);
+                        }
                     }
                 }
             }
             break;
         }
         case 'n': { // Knight
-             const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-             knightMoves.forEach(([dr, dc]) => {
-                 addMove(row + dr, col + dc); // addMove handles bounds and capture/own piece check
+            const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+            knightMoves.forEach(([dr, dc]) => {
+                addMove(row + dr, col + dc); // addMove handles bounds and capture/own piece check
             });
             break;
         }
@@ -1606,13 +1638,13 @@ function getPossibleMovesWithoutCheck(piece, row, col, board = initialBoard) {
                 directions.push([-1, 0], [1, 0], [0, -1], [0, 1]); // Orthogonal
             }
 
-             directions.forEach(([dr, dc]) => {
-                 for (let i = 1; i < 8; i++) {
-                     if (!addMove(row + i * dr, col + i * dc)) {
-                         break; // Stop sliding in this direction
-                     }
-                 }
-             });
+            directions.forEach(([dr, dc]) => {
+                for (let i = 1; i < 8; i++) {
+                    if (!addMove(row + i * dr, col + i * dc)) {
+                        break; // Stop sliding in this direction
+                    }
+                }
+            });
             break;
         }
         case 'k': { // King
@@ -1635,8 +1667,8 @@ function isSquareAttacked(targetRow, targetCol, attackerColor, board = initialBo
             const piece = board[r][c];
             if (piece && (piece === piece.toUpperCase() ? 'white' : 'black') === attackerColor) {
                 // Use getPossibleMovesWithoutCheck to avoid infinite recursion if the opponent move generation checks for checks
-                 const moves = getPossibleMovesWithoutCheck(piece, r, c, board);
-                 if (moves.some(([moveR, moveC]) => moveR === targetRow && moveC === targetCol)) {
+                const moves = getPossibleMovesWithoutCheck(piece, r, c, board);
+                if (moves.some(([moveR, moveC]) => moveR === targetRow && moveC === targetCol)) {
                     return true;
                 }
             }
@@ -1675,12 +1707,12 @@ function wouldKingBeInCheck(fromRow, fromCol, toRow, toCol, color, board = initi
     tempBoard[toRow][toCol] = movingPiece;
     tempBoard[fromRow][fromCol] = '';
 
-     // Handle en passant capture simulation
-     if (movingPiece.toLowerCase() === 'p' && enPassantTarget && toRow === enPassantTarget[0] && toCol === enPassantTarget[1] && !capturedPiece) {
-         const capturedPawnRow = fromRow;
-         const capturedPawnCol = toCol;
-         tempBoard[capturedPawnRow][capturedPawnCol] = ''; // Remove pawn captured en passant in sim
-     }
+    // Handle en passant capture simulation
+    if (movingPiece.toLowerCase() === 'p' && enPassantTarget && toRow === enPassantTarget[0] && toCol === enPassantTarget[1] && !capturedPiece) {
+        const capturedPawnRow = fromRow;
+        const capturedPawnCol = toCol;
+        tempBoard[capturedPawnRow][capturedPawnCol] = ''; // Remove pawn captured en passant in sim
+    }
 
     // Find the king on the temporary board
     const kingSymbol = (color === 'white' ? 'K' : 'k');
@@ -1716,12 +1748,12 @@ function getPossibleMoves(piece, row, col, board = initialBoard) {
         if (canCastle(color, 'kingside', board)) {
             // Castle move goes 2 squares
             const castleToCol = col + 2;
-             legalMoves.push([row, castleToCol]);
+            legalMoves.push([row, castleToCol]);
         }
         // Queenside
         if (canCastle(color, 'queenside', board)) {
             const castleToCol = col - 2;
-             legalMoves.push([row, castleToCol]);
+            legalMoves.push([row, castleToCol]);
         }
     }
 
