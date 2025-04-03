@@ -6,6 +6,15 @@ A browser-based chess application built with pure HTML, CSS, and JavaScript, fea
 
 **(Note: This README describes the version *without* online multiplayer via Firebase.)**
 
+## Aperçu
+
+![Menu principal](assets/Mode-selection.png)
+*Menu principal du jeu DFWS Chess*
+
+![Échiquier](assets/board.png)
+*Échiquier avec interface moderne et animations fluides*
+
+
 ## ✨ Features
 
 **Gameplay & Rules:**
